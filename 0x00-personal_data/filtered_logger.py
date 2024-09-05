@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
-"""0. Regex-ing """
-import logging
+"""A module for filtering logs.
+"""
 import re
+from typing import List
 
 
-def filter_datum(fields: list, redaction: str, message: str,
-                 separator: str) -> str:
-    """Function that filters a string to redact specified fields"""
-    for field in fields:
-        replace = re.compile(rf'{re.escape(field)}=[^{separator}]*')
-        message = replace.sub(f'{field}={redaction}', message)
-        logging.debug("After redacting '{}': {}".format(field, message))
-    return message
+patterns = {
+    'extract': lambda x, y: r'(?P<field>{})=[^{}]*'.format('|'.join(x), y),
+    'replace': lambda x: r'\g<field>={}'.format(x),
+}
+
+
+def filter_datum(
+        fields: List[str], redaction: str, message: str, separator: str,
+        ) -> str:
+    """Filters a log line.
+    """
+    extract, replace = (patterns["extract"], patterns["replace"])
+    return re.sub(extract(fields, separator), replace(redaction), message)
